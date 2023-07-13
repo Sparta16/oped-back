@@ -1,33 +1,22 @@
-use crate::models::{JwtData, User, Users};
-use crate::repositories::{UserRepository, UserRepositoryError};
-use crate::utils::generate_salt;
 use async_trait::async_trait;
 use sha256::digest;
 use std::sync::Arc;
 
-#[derive(Debug)]
-pub enum UserServiceError {
-    Message(String),
-}
-
-impl Into<UserServiceError> for UserRepositoryError {
-    fn into(self) -> UserServiceError {
-        match self {
-            UserRepositoryError::Message(message) => UserServiceError::Message(message),
-        }
-    }
-}
-
-#[async_trait]
-pub trait UserService: Sync + Send {
-    async fn get_all(&self) -> Result<Users, UserServiceError>;
-    async fn get_one(&self, id: i32) -> Result<User, UserServiceError>;
-    async fn register(&self, login: String, password: String) -> Result<User, UserServiceError>;
-    async fn login(&self, login: String, password: String) -> Result<String, UserServiceError>;
-}
+use crate::core::user::{
+    model::{User, UserServiceError, Users},
+    repository::UserRepository,
+    service::UserService,
+};
+use crate::infrastructure::{models::JwtData, utils::generate_salt};
 
 pub struct UserServiceImp {
-    pub user_repository: Arc<dyn UserRepository>,
+    user_repository: Arc<dyn UserRepository>,
+}
+
+impl UserServiceImp {
+    pub fn new(user_repository: Arc<dyn UserRepository>) -> Self {
+        Self { user_repository }
+    }
 }
 
 #[async_trait]
@@ -42,7 +31,7 @@ impl UserService for UserServiceImp {
     }
 
     async fn get_one(&self, id: i32) -> Result<User, UserServiceError> {
-        let user = self.user_repository.select_one(id).await;
+        let user = self.user_repository.select_one_by_id(id).await;
 
         match user {
             Ok(user) => Ok(user),
@@ -69,7 +58,7 @@ impl UserService for UserServiceImp {
 
         let user_id = user_id.unwrap();
 
-        let user = self.user_repository.select_one(user_id).await;
+        let user = self.user_repository.select_one_by_id(user_id).await;
 
         match user {
             Ok(user) => Ok(user),
@@ -86,19 +75,17 @@ impl UserService for UserServiceImp {
 
         let user = user.unwrap();
 
-        let salt = user.salt;
+        let salt = user.clone_salt();
 
         password.push_str(salt.as_str());
 
         let hash = digest(password);
 
-        if hash != user.hash {
-            return Err(UserServiceError::Message(
-                "Пароль неверный! Как и ты (такой же невверный ежжи)".to_owned(),
-            ));
+        if hash != user.clone_hash() {
+            return Err(UserServiceError::Message("Wrong password".to_string()));
         }
 
-        let jwt_data = JwtData::new(user.id);
+        let jwt_data = JwtData::new(user.get_id());
 
         let token = jwt_data.into_token();
 

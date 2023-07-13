@@ -1,57 +1,12 @@
-use crate::models::{User, Users};
-use crate::services::{UserService, UserServiceError};
-use actix_web::web::{Data, Json};
-use actix_web::{HttpRequest, HttpResponse, Responder};
-use serde::{Deserialize, Serialize};
+use actix_web::{
+    web::{Data, Json},
+    HttpRequest, HttpResponse, Responder,
+};
 
-#[derive(Serialize)]
-struct ErrorDTO {
-    message: String,
-}
+use crate::core::user::{model::UserServiceError, service::UserService};
+use crate::infrastructure::models::ErrorDTO;
 
-impl ErrorDTO {
-    pub fn new(message: String) -> Self {
-        Self { message }
-    }
-}
-
-#[derive(Serialize)]
-struct GetUsersResDTO {
-    id: i32,
-    login: String,
-}
-
-impl Into<GetUsersResDTO> for User {
-    fn into(self) -> GetUsersResDTO {
-        GetUsersResDTO {
-            id: self.id,
-            login: self.login,
-        }
-    }
-}
-
-impl Into<Vec<GetUsersResDTO>> for Users {
-    fn into(self) -> Vec<GetUsersResDTO> {
-        self.0.into_iter().map(|item| item.into()).collect()
-    }
-}
-
-#[derive(Deserialize)]
-pub struct RegisterUserReqDTO {
-    pub login: String,
-    pub password: String,
-}
-
-#[derive(Deserialize)]
-pub struct LoginUserReqDTO {
-    pub login: String,
-    pub password: String,
-}
-
-#[derive(Serialize)]
-pub struct LoginUserResDTO {
-    pub token: String,
-}
+use super::models::{GetUsersResDTO, LoginUserReqDTO, LoginUserResDTO, RegisterUserReqDTO};
 
 pub async fn get_users(user_service: Data<dyn UserService>) -> impl Responder {
     let users = user_service.get_all().await;
@@ -75,7 +30,7 @@ pub async fn get_user(user_service: Data<dyn UserService>, req: HttpRequest) -> 
 
     if let Err(_) = id {
         return HttpResponse::BadRequest()
-            .json(ErrorDTO::new("User id is not a number".to_owned()));
+            .json(ErrorDTO::new("User id is not a number".to_string()));
     }
 
     let id = id.unwrap();
@@ -105,14 +60,13 @@ pub async fn register_user(
     let password = dto.password;
 
     if login.len() < 3 || login.len() > 32 {
-        return HttpResponse::BadRequest().json(ErrorDTO::new(
-            "Genius, login min 3 characters max 32".to_owned(),
-        ));
+        return HttpResponse::BadRequest()
+            .json(ErrorDTO::new("Login must be 3-32 characters".to_string()));
     }
 
-    if password.len() < 7 || password.len() > 32 {
+    if password.len() < 3 || password.len() > 32 {
         return HttpResponse::BadRequest().json(ErrorDTO::new(
-            "Genius, password min 3 characters max 32".to_owned(),
+            "Password must be 3-32 characters".to_string(),
         ));
     }
 
@@ -141,23 +95,34 @@ pub async fn login_user(
     let password = dto.password;
 
     if login.len() < 3 || login.len() > 32 {
-        return HttpResponse::BadRequest().json(ErrorDTO::new(
-            "Genius, login min 3 characters max 32".to_owned(),
-        ));
+        return HttpResponse::BadRequest()
+            .json(ErrorDTO::new("Login must be 3-32 characters".to_string()));
     }
 
-    if password.len() < 7 || password.len() > 32 {
+    if password.len() < 3 || password.len() > 32 {
         return HttpResponse::BadRequest().json(ErrorDTO::new(
-            "Genius, password min 3 characters max 32".to_owned(),
+            "Password must be 3-32 characters".to_string(),
         ));
     }
 
     let token = user_service.login(login, password).await;
 
     match token {
-        Ok(token) => HttpResponse::Ok().json(LoginUserResDTO { token }),
+        Ok(token) => HttpResponse::Ok().json(LoginUserResDTO::new(token)),
         Err(UserServiceError::Message(message)) => {
             HttpResponse::BadRequest().json(ErrorDTO::new(message))
         }
     }
+}
+
+use actix_web::web::{get, post, scope, ServiceConfig};
+
+pub fn configure(cfg: &mut ServiceConfig) {
+    cfg.service(
+        scope("/users")
+            .route("", get().to(get_users))
+            .route("/registration", post().to(register_user))
+            .route("/login", post().to(login_user))
+            .route("/{id}", get().to(get_user)),
+    );
 }

@@ -3,23 +3,16 @@ use jwt::SignWithKey;
 use serde::{Deserialize, Serialize};
 use sha2::digest::KeyInit;
 use sha2::Sha256;
-use sqlx::FromRow;
 use std::collections::BTreeMap;
 
-#[derive(Serialize, FromRow)]
-pub struct User {
-    pub id: i32,
-    pub login: String,
-    pub hash: String,
-    pub salt: String,
+#[derive(Serialize)]
+pub struct ErrorDTO {
+    message: String,
 }
 
-#[derive(Serialize)]
-pub struct Users(pub Vec<User>);
-
-impl Users {
-    pub fn new(users: Vec<User>) -> Self {
-        Self(users)
+impl ErrorDTO {
+    pub fn new(message: String) -> Self {
+        Self { message }
     }
 }
 
