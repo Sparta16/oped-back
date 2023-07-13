@@ -72,7 +72,11 @@ impl UserRepository for MemoryUserRepository {
             Err(poisoned) => poisoned.into_inner(),
         };
 
-        if (*users).iter().find(|user| user.clone_login() == login) {
+        if (*users)
+            .iter()
+            .find(|user| user.clone_login() == login)
+            .is_some()
+        {
             return Err(UserRepositoryError::Message(
                 "This login already taken".to_string(),
             ));

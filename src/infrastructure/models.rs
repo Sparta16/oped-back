@@ -1,8 +1,8 @@
 use hmac::Hmac;
 use jwt::SignWithKey;
+use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
-use sha2::digest::KeyInit;
-use sha2::Sha256;
+use sha2::{digest::KeyInit, Sha256};
 use std::collections::BTreeMap;
 
 #[derive(Serialize)]
@@ -16,6 +16,11 @@ impl ErrorDTO {
     }
 }
 
+lazy_static! {
+    static ref JWT_SECRET: String =
+        std::env::var("JWT_SECRET").expect("env variable `JWT_SECRET` should be set");
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct JwtData {
     pub user_id: i32,
@@ -27,11 +32,7 @@ impl JwtData {
     }
 
     fn get_key() -> Hmac<Sha256> {
-        let secret = std::env::var("JWT_SECRET").expect("env variable `JWT_SECRET` should be set");
-
-        let key = Hmac::<Sha256>::new_from_slice(secret.as_bytes()).unwrap();
-
-        key
+        Hmac::<Sha256>::new_from_slice(JWT_SECRET.as_bytes()).unwrap()
     }
 
     pub fn into_token(self) -> String {
