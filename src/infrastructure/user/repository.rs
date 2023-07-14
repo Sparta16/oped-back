@@ -1,8 +1,10 @@
 use async_trait::async_trait;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use crate::core::user::models::UserRepositoryError;
-use crate::core::user::{models::User, repository::UserRepository};
+use crate::core::user::{
+    models::{User, UserRepositoryError},
+    repository::UserRepository,
+};
 
 pub struct MemoryUserRepository {
     shared_users: Arc<Mutex<Vec<User>>>,
