@@ -1,9 +1,10 @@
 use hmac::Hmac;
 use jwt::SignWithKey;
-use lazy_static::lazy_static;
 use serde::{Deserialize, Serialize};
 use sha2::{digest::KeyInit, Sha256};
 use std::collections::BTreeMap;
+
+use crate::infrastructure::constants::ENV_CONFIG;
 
 #[derive(Serialize)]
 pub struct ErrorDTO {
@@ -16,9 +17,28 @@ impl ErrorDTO {
     }
 }
 
-lazy_static! {
-    static ref JWT_SECRET: String =
-        std::env::var("JWT_SECRET").expect("env variable `JWT_SECRET` should be set");
+pub struct EnvConfig {
+    jwt_secret: String,
+    jwt_domain: String,
+}
+
+impl EnvConfig {
+    pub fn new(jwt_secret: String, jwt_domain: String) -> Self {
+        Self {
+            jwt_secret,
+            jwt_domain,
+        }
+    }
+
+    pub fn check(&self) {}
+
+    pub fn clone_jwt_secret(&self) -> String {
+        self.jwt_secret.clone()
+    }
+
+    pub fn clone_jwt_domain(&self) -> String {
+        self.jwt_domain.clone()
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -32,7 +52,7 @@ impl JwtData {
     }
 
     fn get_key() -> Hmac<Sha256> {
-        Hmac::<Sha256>::new_from_slice(JWT_SECRET.as_bytes()).unwrap()
+        Hmac::<Sha256>::new_from_slice(ENV_CONFIG.clone_jwt_secret().as_bytes()).unwrap()
     }
 
     pub fn into_token(self) -> String {

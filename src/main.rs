@@ -11,12 +11,13 @@ use dotenv::dotenv;
 use std::sync::{Arc, Mutex};
 
 use crate::core::user::{models::User, repository::UserRepository, service::UserService};
-use crate::infrastructure::controllers::configure;
 use crate::infrastructure::user::{repository::MemoryUserRepository, service::UserServiceImp};
+use crate::infrastructure::{constants::ENV_CONFIG, controllers::configure};
 
 #[main]
 async fn main() -> std::io::Result<()> {
     dotenv().ok();
+    ENV_CONFIG.check();
 
     let shared_users: Arc<Mutex<Vec<User>>> = Arc::new(Mutex::new(vec![]));
     let shared_index: Arc<Mutex<i32>> = Arc::new(Mutex::new(1));

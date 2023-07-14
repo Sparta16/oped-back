@@ -39,12 +39,10 @@ pub struct LoginUserReqDTO {
 }
 
 #[derive(Serialize)]
-pub struct LoginUserResDTO {
-    token: String,
-}
+pub struct LoginUserResDTO {}
 
 impl LoginUserResDTO {
-    pub fn new(token: String) -> Self {
-        Self { token }
+    pub fn new() -> Self {
+        Self {}
     }
 }

@@ -1,10 +1,11 @@
 use actix_web::{
+    cookie::Cookie,
     web::{Data, Json},
     HttpRequest, HttpResponse, Responder,
 };
 
 use crate::core::user::{models::UserServiceError, service::UserService};
-use crate::infrastructure::models::ErrorDTO;
+use crate::infrastructure::{constants::ENV_CONFIG, models::ErrorDTO};
 
 use super::models::{GetUsersResDTO, LoginUserReqDTO, LoginUserResDTO, RegisterUserReqDTO};
 
@@ -108,7 +109,18 @@ pub async fn login_user(
     let token = user_service.login(login, password).await;
 
     match token {
-        Ok(token) => HttpResponse::Ok().json(LoginUserResDTO::new(token)),
+        Ok(token) => {
+            let cookie = Cookie::build("jwt", token)
+                .domain(ENV_CONFIG.clone_jwt_domain())
+                .path("/")
+                .secure(true)
+                .http_only(true)
+                .finish();
+
+            HttpResponse::Ok()
+                .cookie(cookie)
+                .json(LoginUserResDTO::new())
+        }
         Err(UserServiceError::Message(message)) => {
             HttpResponse::BadRequest().json(ErrorDTO::new(message))
         }
