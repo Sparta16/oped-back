@@ -3,7 +3,7 @@ use sha256::digest;
 use std::sync::Arc;
 
 use crate::core::user::{
-    model::{User, UserServiceError, Users},
+    models::{User, UserServiceError, Users},
     repository::UserRepository,
     service::UserService,
 };

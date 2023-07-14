@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::core::user::model::{User, Users};
+use crate::core::user::models::{User, Users};
 
 #[derive(Serialize)]
 pub struct GetUsersResDTO {

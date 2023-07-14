@@ -1,8 +1,8 @@
 use async_trait::async_trait;
 use std::sync::{Arc, Mutex, MutexGuard};
 
-use crate::core::user::model::UserRepositoryError;
-use crate::core::user::{model::User, repository::UserRepository};
+use crate::core::user::models::UserRepositoryError;
+use crate::core::user::{models::User, repository::UserRepository};
 
 pub struct MemoryUserRepository {
     shared_users: Arc<Mutex<Vec<User>>>,
@@ -16,24 +16,32 @@ impl MemoryUserRepository {
             shared_index,
         }
     }
+
+    fn lock_users(&self) -> MutexGuard<Vec<User>> {
+        match self.shared_users.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        }
+    }
+
+    fn lock_index(&self) -> MutexGuard<i32> {
+        match self.shared_index.lock() {
+            Ok(guard) => guard,
+            Err(poisoned) => poisoned.into_inner(),
+        }
+    }
 }
 
 #[async_trait]
 impl UserRepository for MemoryUserRepository {
     async fn select_all(&self) -> Result<Vec<User>, UserRepositoryError> {
-        let users: MutexGuard<Vec<User>> = match self.shared_users.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
+        let users = self.lock_users();
 
         Ok((*users).clone())
     }
 
     async fn select_one_by_id(&self, id: i32) -> Result<User, UserRepositoryError> {
-        let users: MutexGuard<Vec<User>> = match self.shared_users.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
+        let users = self.lock_users();
 
         let user = (*users).iter().find(|user| user.get_id() == id);
 
@@ -46,10 +54,7 @@ impl UserRepository for MemoryUserRepository {
     }
 
     async fn select_one_by_login(&self, login: String) -> Result<User, UserRepositoryError> {
-        let users: MutexGuard<Vec<User>> = match self.shared_users.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
+        let users = self.lock_users();
 
         let user = (*users).iter().find(|user| user.clone_login() == login);
 
@@ -67,10 +72,7 @@ impl UserRepository for MemoryUserRepository {
         hash: String,
         salt: String,
     ) -> Result<i32, UserRepositoryError> {
-        let mut users: MutexGuard<Vec<User>> = match self.shared_users.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
+        let mut users = self.lock_users();
 
         if (*users)
             .iter()
@@ -82,10 +84,7 @@ impl UserRepository for MemoryUserRepository {
             ));
         }
 
-        let mut index: MutexGuard<i32> = match self.shared_index.lock() {
-            Ok(guard) => guard,
-            Err(poisoned) => poisoned.into_inner(),
-        };
+        let mut index = self.lock_index();
 
         let user_id = *index;
 

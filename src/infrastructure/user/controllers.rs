@@ -3,7 +3,7 @@ use actix_web::{
     HttpRequest, HttpResponse, Responder,
 };
 
-use crate::core::user::{model::UserServiceError, service::UserService};
+use crate::core::user::{models::UserServiceError, service::UserService};
 use crate::infrastructure::models::ErrorDTO;
 
 use super::models::{GetUsersResDTO, LoginUserReqDTO, LoginUserResDTO, RegisterUserReqDTO};

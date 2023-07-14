@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 
-use super::model::{User, UserServiceError, Users};
+use super::models::{User, UserServiceError, Users};
 
 #[async_trait]
 pub trait UserService: Sync + Send {

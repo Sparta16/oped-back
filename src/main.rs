@@ -10,8 +10,8 @@ use actix_web::{
 use dotenv::dotenv;
 use std::sync::{Arc, Mutex};
 
-use crate::core::user::{model::User, repository::UserRepository, service::UserService};
-use crate::infrastructure::controller::configure;
+use crate::core::user::{models::User, repository::UserRepository, service::UserService};
+use crate::infrastructure::controllers::configure;
 use crate::infrastructure::user::{repository::MemoryUserRepository, service::UserServiceImp};
 
 #[main]
