@@ -60,14 +60,14 @@ pub async fn register_user(
 
     let password = dto.password;
 
-    if login.len() < 3 || login.len() > 32 {
+    if login.len() < 3 || login.len() > 30 {
         return HttpResponse::BadRequest()
-            .json(ErrorDTO::new("Login must be 3-32 characters".to_string()));
+            .json(ErrorDTO::new("Login must be 3-30 characters".to_string()));
     }
 
-    if password.len() < 3 || password.len() > 32 {
+    if password.len() < 3 || password.len() > 30 {
         return HttpResponse::BadRequest().json(ErrorDTO::new(
-            "Password must be 3-32 characters".to_string(),
+            "Password must be 3-30 characters".to_string(),
         ));
     }
 
@@ -95,14 +95,14 @@ pub async fn login_user(
 
     let password = dto.password;
 
-    if login.len() < 3 || login.len() > 32 {
+    if login.len() < 3 || login.len() > 30 {
         return HttpResponse::BadRequest()
-            .json(ErrorDTO::new("Login must be 3-32 characters".to_string()));
+            .json(ErrorDTO::new("Login must be 3-30 characters".to_string()));
     }
 
-    if password.len() < 3 || password.len() > 32 {
+    if password.len() < 3 || password.len() > 30 {
         return HttpResponse::BadRequest().json(ErrorDTO::new(
-            "Password must be 3-32 characters".to_string(),
+            "Password must be 3-30 characters".to_string(),
         ));
     }
 

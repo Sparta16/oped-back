@@ -1,18 +1,24 @@
 mod core;
 mod infrastructure;
 
+use actix_web::dev::{Service, ServiceResponse};
 use actix_web::{
     error::InternalError,
+    http::Method,
     main,
     web::{Data, JsonConfig},
     App, HttpResponse, HttpServer,
 };
 use dotenv::dotenv;
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::{Arc, Mutex};
 
 use crate::core::user::{models::User, repository::UserRepository, service::UserService};
 use crate::infrastructure::user::{repository::MemoryUserRepository, service::UserServiceImp};
-use crate::infrastructure::{constants::ENV_CONFIG, controllers::configure};
+use crate::infrastructure::{
+    constants::ENV_CONFIG, controllers::configure, utils::insert_access_control_allow_headers,
+};
 
 #[main]
 async fn main() -> std::io::Result<()> {
@@ -42,6 +48,41 @@ async fn main() -> std::io::Result<()> {
             .app_data(json_config)
             .app_data(Data::from(user_service.clone()))
             .configure(configure)
+            .wrap_fn(|service_request, app_routing| -> Pin<Box<dyn Future<Output = Result<ServiceResponse, actix_web::Error>>>> {
+                let http_request = service_request.request();
+                let is_pre_flight = http_request.method() == Method::OPTIONS
+                    && http_request.headers().contains_key("origin")
+                    && http_request
+                        .headers()
+                        .contains_key("access-control-request-method");
+
+                if is_pre_flight {
+                    return Box::pin(async move {
+                        let mut service_response = ServiceResponse::new(
+                            service_request.request().clone(),
+                            HttpResponse::NoContent().finish(),
+                        );
+
+                        let headers = service_response.response_mut().headers_mut();
+
+                        insert_access_control_allow_headers(headers);
+
+                        return Ok(service_response);
+                    });
+                };
+
+                let fut = app_routing.call(service_request);
+
+                Box::pin(async {
+                    let mut service_response: ServiceResponse = fut.await?;
+
+                    let headers = service_response.response_mut().headers_mut();
+
+                    insert_access_control_allow_headers(headers);
+
+                    Ok(service_response)
+                })
+            })
     })
     .bind(("127.0.0.1", 25565))?
     .run()

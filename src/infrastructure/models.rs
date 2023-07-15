@@ -20,13 +20,28 @@ impl ErrorDTO {
 pub struct EnvConfig {
     jwt_secret: String,
     jwt_domain: String,
+    access_control_allow_origin: String,
+    access_control_allow_methods: String,
+    access_control_allow_headers: String,
+    access_control_allow_credentials: String,
 }
 
 impl EnvConfig {
-    pub fn new(jwt_secret: String, jwt_domain: String) -> Self {
+    pub fn new(
+        jwt_secret: String,
+        jwt_domain: String,
+        access_control_allow_origin: String,
+        access_control_allow_methods: String,
+        access_control_allow_headers: String,
+        access_control_allow_credentials: String,
+    ) -> Self {
         Self {
             jwt_secret,
             jwt_domain,
+            access_control_allow_origin,
+            access_control_allow_methods,
+            access_control_allow_headers,
+            access_control_allow_credentials,
         }
     }
 
@@ -38,6 +53,22 @@ impl EnvConfig {
 
     pub fn clone_jwt_domain(&self) -> String {
         self.jwt_domain.clone()
+    }
+
+    pub fn clone_access_control_allow_origin(&self) -> String {
+        self.access_control_allow_origin.clone()
+    }
+
+    pub fn clone_access_control_allow_methods(&self) -> String {
+        self.access_control_allow_methods.clone()
+    }
+
+    pub fn clone_access_control_allow_headers(&self) -> String {
+        self.access_control_allow_headers.clone()
+    }
+
+    pub fn clone_access_control_allow_credentials(&self) -> String {
+        self.access_control_allow_credentials.clone()
     }
 }
 
