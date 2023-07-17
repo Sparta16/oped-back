@@ -257,22 +257,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anime_expert"
-version = "0.1.0"
-dependencies = [
- "actix-web",
- "async-trait",
- "dotenv",
- "hmac",
- "jwt",
- "lazy_static",
- "rand",
- "serde",
- "sha2",
- "sha256",
-]
-
-[[package]]
 name = "async-trait"
 version = "0.1.68"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -767,6 +751,22 @@ name = "once_cell"
 version = "1.17.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7e5500299e16ebb147ae15a00a942af264cf3688f47923b8fc2cd5858f23ad3"
+
+[[package]]
+name = "oped-back"
+version = "0.1.0"
+dependencies = [
+ "actix-web",
+ "async-trait",
+ "dotenv",
+ "hmac",
+ "jwt",
+ "lazy_static",
+ "rand",
+ "serde",
+ "sha2",
+ "sha256",
+]
 
 [[package]]
 name = "parking_lot"

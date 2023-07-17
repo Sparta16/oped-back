@@ -3,6 +3,7 @@ use jwt::SignWithKey;
 use serde::{Deserialize, Serialize};
 use sha2::{digest::KeyInit, Sha256};
 use std::collections::BTreeMap;
+use std::env::var;
 
 use crate::infrastructure::constants::ENV_CONFIG;
 
@@ -27,21 +28,18 @@ pub struct EnvConfig {
 }
 
 impl EnvConfig {
-    pub fn new(
-        jwt_secret: String,
-        jwt_domain: String,
-        access_control_allow_origin: String,
-        access_control_allow_methods: String,
-        access_control_allow_headers: String,
-        access_control_allow_credentials: String,
-    ) -> Self {
+    pub fn new() -> Self {
         Self {
-            jwt_secret,
-            jwt_domain,
-            access_control_allow_origin,
-            access_control_allow_methods,
-            access_control_allow_headers,
-            access_control_allow_credentials,
+            jwt_secret: var("JWT_SECRET").expect("ENV-variable `JWT_SECRET` must be set"),
+            jwt_domain: var("JWT_DOMAIN").expect("ENV-variable `JWT_DOMAIN` must be set"),
+            access_control_allow_origin: var("ACCESS_CONTROL_ALLOW_ORIGIN")
+                .expect("ENV-variable `ACCESS_CONTROL_ALLOW_ORIGIN` must be set"),
+            access_control_allow_methods: var("ACCESS_CONTROL_ALLOW_METHODS")
+                .expect("ENV-variable `ACCESS_CONTROL_ALLOW_METHODS` must be set"),
+            access_control_allow_headers: var("ACCESS_CONTROL_ALLOW_HEADERS")
+                .expect("ENV-variable `ACCESS_CONTROL_ALLOW_HEADERS` must be set"),
+            access_control_allow_credentials: var("ACCESS_CONTROL_ALLOW_CREDENTIALS")
+                .expect("ENV-variable `ACCESS_CONTROL_ALLOW_CREDENTIALS` must be set"),
         }
     }
 
