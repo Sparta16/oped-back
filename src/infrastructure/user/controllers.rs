@@ -1,22 +1,28 @@
 use actix_web::{
     cookie::Cookie,
-    web::{Data, Json},
+    web::{get, post, scope, Data, Json, ServiceConfig},
     HttpRequest, HttpResponse, Responder,
 };
 
 use crate::core::user::{models::UserServiceError, service::UserService};
-use crate::infrastructure::{constants::ENV_CONFIG, models::ErrorDTO};
+use crate::infrastructure::models::JwtData;
+use crate::infrastructure::{
+    constants::ENV_CONFIG,
+    models::{AuthGuard, ErrorDTO},
+};
 
-use super::models::{GetUsersResDTO, LoginUserReqDTO, LoginUserResDTO, RegisterUserReqDTO};
+use super::models::{
+    GetProfileResDTO, GetUsersResDTO, LoginUserReqDTO, LoginUserResDTO, RegisterUserReqDTO,
+};
 
 pub async fn get_users(user_service: Data<dyn UserService>) -> impl Responder {
     let users = user_service.get_all().await;
 
     match users {
         Ok(users) => {
-            let users: Vec<GetUsersResDTO> = users.into();
+            let res_dto: Vec<GetUsersResDTO> = users.into();
 
-            HttpResponse::Ok().json(users)
+            HttpResponse::Ok().json(res_dto)
         }
         Err(UserServiceError::Message(message)) => {
             HttpResponse::InternalServerError().json(ErrorDTO::new(message))
@@ -40,9 +46,30 @@ pub async fn get_user(user_service: Data<dyn UserService>, req: HttpRequest) -> 
 
     match user {
         Ok(user) => {
-            let user: GetUsersResDTO = user.into();
+            let res_dto: GetUsersResDTO = user.into();
 
-            HttpResponse::Ok().json(user)
+            HttpResponse::Ok().json(res_dto)
+        }
+        Err(UserServiceError::Message(message)) => {
+            HttpResponse::InternalServerError().json(ErrorDTO::new(message))
+        }
+    }
+}
+
+pub async fn get_profile(user_service: Data<dyn UserService>, req: HttpRequest) -> impl Responder {
+    let jwt_cookie = req.cookie("jwt").unwrap();
+
+    let jwt = jwt_cookie.value();
+
+    let jwt_data = JwtData::from_token_str(jwt).unwrap();
+
+    let user = user_service.get_one(jwt_data.get_user_id()).await;
+
+    match user {
+        Ok(user) => {
+            let res_dto: GetProfileResDTO = user.into();
+
+            HttpResponse::Ok().json(res_dto)
         }
         Err(UserServiceError::Message(message)) => {
             HttpResponse::InternalServerError().json(ErrorDTO::new(message))
@@ -75,9 +102,9 @@ pub async fn register_user(
 
     match user {
         Ok(user) => {
-            let user: GetUsersResDTO = user.into();
+            let res_dto: GetUsersResDTO = user.into();
 
-            HttpResponse::Ok().json(user)
+            HttpResponse::Ok().json(res_dto)
         }
         Err(UserServiceError::Message(message)) => {
             HttpResponse::InternalServerError().json(ErrorDTO::new(message))
@@ -127,12 +154,11 @@ pub async fn login_user(
     }
 }
 
-use actix_web::web::{get, post, scope, ServiceConfig};
-
 pub fn configure(cfg: &mut ServiceConfig) {
     cfg.service(
         scope("/users")
             .route("", get().to(get_users))
+            .route("/profile", get().to(get_profile).wrap(AuthGuard::new()))
             .route("/registration", post().to(register_user))
             .route("/login", post().to(login_user))
             .route("/{id}", get().to(get_user)),

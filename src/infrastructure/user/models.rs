@@ -26,6 +26,21 @@ impl Into<Vec<GetUsersResDTO>> for Users {
     }
 }
 
+#[derive(Serialize)]
+pub struct GetProfileResDTO {
+    id: i32,
+    login: String,
+}
+
+impl Into<GetProfileResDTO> for User {
+    fn into(self) -> GetProfileResDTO {
+        GetProfileResDTO {
+            id: self.get_id(),
+            login: self.clone_login(),
+        }
+    }
+}
+
 #[derive(Deserialize)]
 pub struct RegisterUserReqDTO {
     pub login: String,
