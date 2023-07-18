@@ -148,7 +148,7 @@ pub async fn login_user(
 
             HttpResponse::Ok()
                 .cookie(cookie)
-                .json(LoginUserResDTO::new())
+                .json(LoginUserResDTO::default())
         }
         Err(UserServiceError::Message(message)) => {
             HttpResponse::BadRequest().json(ErrorDTO::new(message))
@@ -167,17 +167,17 @@ pub async fn logout_user() -> impl Responder {
 
     HttpResponse::Ok()
         .cookie(cookie)
-        .json(LogoutUserResDTO::new())
+        .json(LogoutUserResDTO::default())
 }
 
 pub fn configure(cfg: &mut ServiceConfig) {
     cfg.service(
         scope("/users")
-            .route("", get().to(get_users).wrap(AuthGuard::new()))
-            .route("/profile", get().to(get_profile).wrap(AuthGuard::new()))
+            .route("", get().to(get_users).wrap(AuthGuard::default()))
+            .route("/profile", get().to(get_profile).wrap(AuthGuard::default()))
             .route("/registration", post().to(register_user))
             .route("/login", post().to(login_user))
-            .route("/logout", post().to(logout_user).wrap(AuthGuard::new()))
-            .route("/{id}", get().to(get_user).wrap(AuthGuard::new())),
+            .route("/logout", post().to(logout_user).wrap(AuthGuard::default()))
+            .route("/{id}", get().to(get_user).wrap(AuthGuard::default())),
     );
 }

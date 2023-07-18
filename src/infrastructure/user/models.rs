@@ -53,20 +53,8 @@ pub struct LoginUserReqDTO {
     pub password: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 pub struct LoginUserResDTO {}
 
-impl LoginUserResDTO {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-#[derive(Serialize)]
+#[derive(Serialize, Default)]
 pub struct LogoutUserResDTO {}
-
-impl LogoutUserResDTO {
-    pub fn new() -> Self {
-        Self {}
-    }
-}

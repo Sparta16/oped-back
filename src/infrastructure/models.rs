@@ -130,13 +130,8 @@ impl JwtData {
     }
 }
 
+#[derive(Default)]
 pub struct AuthGuard {}
-
-impl AuthGuard {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
 
 pub struct AuthMiddleware<S>
 where
