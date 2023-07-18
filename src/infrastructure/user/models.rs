@@ -61,3 +61,12 @@ impl LoginUserResDTO {
         Self {}
     }
 }
+
+#[derive(Serialize)]
+pub struct LogoutUserResDTO {}
+
+impl LogoutUserResDTO {
+    pub fn new() -> Self {
+        Self {}
+    }
+}

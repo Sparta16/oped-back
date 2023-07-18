@@ -1,3 +1,4 @@
+use actix_web::cookie::time::Duration;
 use actix_web::{
     cookie::Cookie,
     web::{get, post, scope, Data, Json, ServiceConfig},
@@ -6,6 +7,7 @@ use actix_web::{
 
 use crate::core::user::{models::UserServiceError, service::UserService};
 use crate::infrastructure::models::JwtData;
+use crate::infrastructure::user::models::LogoutUserResDTO;
 use crate::infrastructure::{
     constants::ENV_CONFIG,
     models::{AuthGuard, ErrorDTO},
@@ -154,13 +156,28 @@ pub async fn login_user(
     }
 }
 
+pub async fn logout_user() -> impl Responder {
+    let cookie = Cookie::build("jwt", "")
+        .domain(ENV_CONFIG.clone_jwt_domain())
+        .path("/")
+        .secure(true)
+        .http_only(true)
+        .max_age(Duration::ZERO)
+        .finish();
+
+    HttpResponse::Ok()
+        .cookie(cookie)
+        .json(LogoutUserResDTO::new())
+}
+
 pub fn configure(cfg: &mut ServiceConfig) {
     cfg.service(
         scope("/users")
-            .route("", get().to(get_users))
+            .route("", get().to(get_users).wrap(AuthGuard::new()))
             .route("/profile", get().to(get_profile).wrap(AuthGuard::new()))
             .route("/registration", post().to(register_user))
             .route("/login", post().to(login_user))
-            .route("/{id}", get().to(get_user)),
+            .route("/logout", post().to(logout_user).wrap(AuthGuard::new()))
+            .route("/{id}", get().to(get_user).wrap(AuthGuard::new())),
     );
 }
