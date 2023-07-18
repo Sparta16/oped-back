@@ -184,7 +184,7 @@ where
                 return Ok(ServiceResponse::new(
                     req.request().clone(),
                     HttpResponse::Unauthorized()
-                        .json(ErrorDTO::new("You are unauthorized".to_string())),
+                        .json(ErrorDTO::new("You are unauthorized".to_owned())),
                 ));
             }
 
@@ -197,7 +197,7 @@ where
             if jwt_data.is_err() {
                 return Ok(ServiceResponse::new(
                     req.request().clone(),
-                    HttpResponse::Unauthorized().json(ErrorDTO::new("Jwt is invalid".to_string())),
+                    HttpResponse::Unauthorized().json(ErrorDTO::new("Jwt is invalid".to_owned())),
                 ));
             }
 
@@ -208,7 +208,7 @@ where
             if user.is_err() {
                 return Ok(ServiceResponse::new(
                     req.request().clone(),
-                    HttpResponse::Unauthorized().json(ErrorDTO::new("Jwt is invalid".to_string())),
+                    HttpResponse::Unauthorized().json(ErrorDTO::new("Jwt is invalid".to_owned())),
                 ));
             }
 
