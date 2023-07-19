@@ -39,7 +39,7 @@ pub async fn get_user(user_service: Data<dyn UserService>, req: HttpRequest) -> 
 
     if let Err(_) = id {
         return HttpResponse::BadRequest()
-            .json(ErrorDTO::new("User id is not a number".to_owned()));
+            .json(ErrorDTO::new("Значение id не является числом".to_owned()));
     }
 
     let id = id.unwrap();
@@ -91,12 +91,12 @@ pub async fn register_user(
 
     if login.len() < 3 || login.len() > 30 {
         return HttpResponse::BadRequest()
-            .json(ErrorDTO::new("Login must be 3-30 characters".to_owned()));
+            .json(ErrorDTO::new("Длина логина: 3-30 символов".to_owned()));
     }
 
     if password.len() < 3 || password.len() > 30 {
         return HttpResponse::BadRequest()
-            .json(ErrorDTO::new("Password must be 3-30 characters".to_owned()));
+            .json(ErrorDTO::new("Длина пароля: 3-30 символов".to_owned()));
     }
 
     let user = user_service.register(login, password).await;
@@ -125,12 +125,12 @@ pub async fn login_user(
 
     if login.len() < 3 || login.len() > 30 {
         return HttpResponse::BadRequest()
-            .json(ErrorDTO::new("Login must be 3-30 characters".to_owned()));
+            .json(ErrorDTO::new("Длина логина: 3-30 символов".to_owned()));
     }
 
     if password.len() < 3 || password.len() > 30 {
         return HttpResponse::BadRequest()
-            .json(ErrorDTO::new("Password must be 3-30 characters".to_owned()));
+            .json(ErrorDTO::new("Длина пароля: 3-30 символов".to_owned()));
     }
 
     let token = user_service.login(login, password).await;

@@ -82,7 +82,7 @@ impl UserService for UserServiceImp {
         let hash = digest(password);
 
         if hash != user.clone_hash() {
-            return Err(UserServiceError::Message("Wrong password".to_owned()));
+            return Err(UserServiceError::Message("Неверный пароль".to_owned()));
         }
 
         let jwt_data = JwtData::new(user.get_id());

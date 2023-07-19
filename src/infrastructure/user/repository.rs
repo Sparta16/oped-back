@@ -49,7 +49,9 @@ impl UserRepository for MemoryUserRepository {
 
         match user {
             Some(user) => Ok(user.clone()),
-            None => Err(UserRepositoryError::Message("User does`t exist".to_owned())),
+            None => Err(UserRepositoryError::Message(
+                "Такого пользователя не существует".to_owned(),
+            )),
         }
     }
 
@@ -60,7 +62,9 @@ impl UserRepository for MemoryUserRepository {
 
         match user {
             Some(user) => Ok(user.clone()),
-            None => Err(UserRepositoryError::Message("User does`t exist".to_owned())),
+            None => Err(UserRepositoryError::Message(
+                "Такого пользователя не существует".to_owned(),
+            )),
         }
     }
 
@@ -78,7 +82,7 @@ impl UserRepository for MemoryUserRepository {
             .is_some()
         {
             return Err(UserRepositoryError::Message(
-                "This login already taken".to_owned(),
+                "Такой логин уже используется".to_owned(),
             ));
         }
 
