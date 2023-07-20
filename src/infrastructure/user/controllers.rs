@@ -37,14 +37,9 @@ pub async fn get_users(user_service: Data<dyn UserService>) -> impl Responder {
 }
 
 pub async fn get_user(user_service: Data<dyn UserService>, req: HttpRequest) -> impl Responder {
-    let id_or_login = req.match_info().query("id_or_login");
+    let login = req.match_info().query("login");
 
-    let result = id_or_login.parse::<i32>();
-
-    let user = match result {
-        Ok(id) => user_service.get_one_by_id(id).await,
-        Err(_) => user_service.get_one_by_login(id_or_login.to_owned()).await,
-    };
+    let user = user_service.get_one_by_login(login.to_owned()).await;
 
     match user {
         Ok(user) => {
@@ -192,6 +187,6 @@ pub fn configure(cfg: &mut ServiceConfig) {
             .route("/registration", post().to(register_user))
             .route("/login", post().to(login_user))
             .route("/logout", post().to(logout_user).wrap(AuthGuard::default()))
-            .route("/{id_or_login}", get().to(get_user)),
+            .route("/{login}", get().to(get_user)),
     );
 }
