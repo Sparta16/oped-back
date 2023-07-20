@@ -5,16 +5,18 @@ use actix_web::{
     HttpRequest, HttpResponse, Responder,
 };
 
-use crate::core::user::{models::UserServiceError, service::UserService};
-use crate::infrastructure::models::JwtData;
-use crate::infrastructure::user::models::LogoutUserResDTO;
+use crate::core::user::service::{
+    UserService, UserServiceGetAllError, UserServiceGetOneError, UserServiceLoginError,
+    UserServiceRegisterError,
+};
 use crate::infrastructure::{
     constants::ENV_CONFIG,
-    models::{AuthGuard, ErrorDTO},
+    models::{AuthGuard, ErrorDTO, JwtData},
 };
 
 use super::models::{
-    GetProfileResDTO, GetUsersResDTO, LoginUserReqDTO, LoginUserResDTO, RegisterUserReqDTO,
+    GetProfileResDTO, GetUserResDTO, LoginUserReqDTO, LoginUserResDTO, LogoutUserResDTO,
+    RegisterUserReqDTO,
 };
 
 pub async fn get_users(user_service: Data<dyn UserService>) -> impl Responder {
@@ -22,39 +24,42 @@ pub async fn get_users(user_service: Data<dyn UserService>) -> impl Responder {
 
     match users {
         Ok(users) => {
-            let res_dto: Vec<GetUsersResDTO> = users.into();
+            let dto: Vec<GetUserResDTO> = users.into();
 
-            HttpResponse::Ok().json(res_dto)
+            HttpResponse::Ok().json(dto)
         }
-        Err(UserServiceError::Message(message)) => {
-            HttpResponse::InternalServerError().json(ErrorDTO::new(message))
-        }
+        Err(error) => match error {
+            UserServiceGetAllError::UnexpectedError => {
+                HttpResponse::InternalServerError().json(ErrorDTO::new("Внезапная ошибка"))
+            }
+        },
     }
 }
 
 pub async fn get_user(user_service: Data<dyn UserService>, req: HttpRequest) -> impl Responder {
-    let id = req.match_info().query("id");
+    let id_or_login = req.match_info().query("id_or_login");
 
-    let id = id.parse::<i32>();
+    let result = id_or_login.parse::<i32>();
 
-    if let Err(_) = id {
-        return HttpResponse::BadRequest()
-            .json(ErrorDTO::new("Значение id не является числом".to_owned()));
-    }
-
-    let id = id.unwrap();
-
-    let user = user_service.get_one(id).await;
+    let user = match result {
+        Ok(id) => user_service.get_one_by_id(id).await,
+        Err(_) => user_service.get_one_by_login(id_or_login.to_owned()).await,
+    };
 
     match user {
         Ok(user) => {
-            let res_dto: GetUsersResDTO = user.into();
+            let dto: GetUserResDTO = user.into();
 
-            HttpResponse::Ok().json(res_dto)
+            HttpResponse::Ok().json(dto)
         }
-        Err(UserServiceError::Message(message)) => {
-            HttpResponse::InternalServerError().json(ErrorDTO::new(message))
-        }
+        Err(error) => match error {
+            UserServiceGetOneError::NotFound => {
+                HttpResponse::NotFound().json(ErrorDTO::new("Пользователь не найден"))
+            }
+            UserServiceGetOneError::UnexpectedError => {
+                HttpResponse::InternalServerError().json(ErrorDTO::new("Внезапная ошибка"))
+            }
+        },
     }
 }
 
@@ -65,17 +70,22 @@ pub async fn get_profile(user_service: Data<dyn UserService>, req: HttpRequest) 
 
     let jwt_data = JwtData::from_token_str(jwt).unwrap();
 
-    let user = user_service.get_one(jwt_data.get_user_id()).await;
+    let user = user_service.get_one_by_id(jwt_data.get_user_id()).await;
 
     match user {
         Ok(user) => {
-            let res_dto: GetProfileResDTO = user.into();
+            let dto: GetProfileResDTO = user.into();
 
-            HttpResponse::Ok().json(res_dto)
+            HttpResponse::Ok().json(dto)
         }
-        Err(UserServiceError::Message(message)) => {
-            HttpResponse::InternalServerError().json(ErrorDTO::new(message))
-        }
+        Err(error) => match error {
+            UserServiceGetOneError::NotFound => {
+                HttpResponse::NotFound().json(ErrorDTO::new("Пользователь не найден"))
+            }
+            UserServiceGetOneError::UnexpectedError => {
+                HttpResponse::InternalServerError().json(ErrorDTO::new("Внезапная ошибка"))
+            }
+        },
     }
 }
 
@@ -90,26 +100,29 @@ pub async fn register_user(
     let password = dto.password;
 
     if login.len() < 3 || login.len() > 30 {
-        return HttpResponse::BadRequest()
-            .json(ErrorDTO::new("Длина логина: 3-30 символов".to_owned()));
+        return HttpResponse::BadRequest().json(ErrorDTO::new("Длина логина: 3-30 символов"));
     }
 
     if password.len() < 3 || password.len() > 30 {
-        return HttpResponse::BadRequest()
-            .json(ErrorDTO::new("Длина пароля: 3-30 символов".to_owned()));
+        return HttpResponse::BadRequest().json(ErrorDTO::new("Длина пароля: 3-30 символов"));
     }
 
     let user = user_service.register(login, password).await;
 
     match user {
         Ok(user) => {
-            let res_dto: GetUsersResDTO = user.into();
+            let res_dto: GetUserResDTO = user.into();
 
             HttpResponse::Ok().json(res_dto)
         }
-        Err(UserServiceError::Message(message)) => {
-            HttpResponse::InternalServerError().json(ErrorDTO::new(message))
-        }
+        Err(error) => match error {
+            UserServiceRegisterError::LoginAlreadyUsed => {
+                HttpResponse::BadRequest().json(ErrorDTO::new("Данный логин уже используется"))
+            }
+            UserServiceRegisterError::UnexpectedError => {
+                HttpResponse::InternalServerError().json(ErrorDTO::new("Внезапная ошибка"))
+            }
+        },
     }
 }
 
@@ -124,13 +137,11 @@ pub async fn login_user(
     let password = dto.password;
 
     if login.len() < 3 || login.len() > 30 {
-        return HttpResponse::BadRequest()
-            .json(ErrorDTO::new("Длина логина: 3-30 символов".to_owned()));
+        return HttpResponse::BadRequest().json(ErrorDTO::new("Длина логина: 3-30 символов"));
     }
 
     if password.len() < 3 || password.len() > 30 {
-        return HttpResponse::BadRequest()
-            .json(ErrorDTO::new("Длина пароля: 3-30 символов".to_owned()));
+        return HttpResponse::BadRequest().json(ErrorDTO::new("Длина пароля: 3-30 символов"));
     }
 
     let token = user_service.login(login, password).await;
@@ -148,9 +159,14 @@ pub async fn login_user(
                 .cookie(cookie)
                 .json(LoginUserResDTO::default())
         }
-        Err(UserServiceError::Message(message)) => {
-            HttpResponse::BadRequest().json(ErrorDTO::new(message))
-        }
+        Err(error) => match error {
+            UserServiceLoginError::NotFound | UserServiceLoginError::WrongPassword => {
+                HttpResponse::BadRequest().json(ErrorDTO::new("Неверный логин или пароль"))
+            }
+            UserServiceLoginError::UnexpectedError => {
+                HttpResponse::InternalServerError().json(ErrorDTO::new("Внезапная ошибка"))
+            }
+        },
     }
 }
 
@@ -171,11 +187,11 @@ pub async fn logout_user() -> impl Responder {
 pub fn configure(cfg: &mut ServiceConfig) {
     cfg.service(
         scope("/users")
-            .route("", get().to(get_users).wrap(AuthGuard::default()))
+            .route("", get().to(get_users))
             .route("/profile", get().to(get_profile).wrap(AuthGuard::default()))
             .route("/registration", post().to(register_user))
             .route("/login", post().to(login_user))
             .route("/logout", post().to(logout_user).wrap(AuthGuard::default()))
-            .route("/{id}", get().to(get_user).wrap(AuthGuard::default())),
+            .route("/{id_or_login}", get().to(get_user)),
     );
 }

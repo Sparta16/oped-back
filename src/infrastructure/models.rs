@@ -1,4 +1,4 @@
-use crate::core::user::service::UserService;
+use crate::core::user::service::{UserService, UserServiceGetOneError};
 use actix_web::dev::{forward_ready, Service, ServiceRequest, ServiceResponse, Transform};
 use actix_web::{web::Data, Error as WebActixError, HttpResponse};
 use hmac::Hmac;
@@ -19,8 +19,10 @@ pub struct ErrorDTO {
 }
 
 impl ErrorDTO {
-    pub fn new(message: String) -> Self {
-        Self { message }
+    pub fn new(message: &str) -> Self {
+        Self {
+            message: message.to_owned(),
+        }
     }
 }
 
@@ -183,8 +185,7 @@ where
             if jwt_cookie.is_none() {
                 return Ok(ServiceResponse::new(
                     req.request().clone(),
-                    HttpResponse::Unauthorized()
-                        .json(ErrorDTO::new("You are unauthorized".to_owned())),
+                    HttpResponse::Unauthorized().json(ErrorDTO::new("Вы не авторизованы")),
                 ));
             }
 
@@ -197,19 +198,30 @@ where
             if jwt_data.is_err() {
                 return Ok(ServiceResponse::new(
                     req.request().clone(),
-                    HttpResponse::Unauthorized().json(ErrorDTO::new("Jwt is invalid".to_owned())),
+                    HttpResponse::Unauthorized().json(ErrorDTO::new("Вы не авторизованы")),
                 ));
             }
 
             let jwt_data = jwt_data.unwrap();
 
-            let user = user_service.get_one(jwt_data.get_user_id()).await;
+            let result = user_service.get_one_by_id(jwt_data.get_user_id()).await;
 
-            if user.is_err() {
-                return Ok(ServiceResponse::new(
-                    req.request().clone(),
-                    HttpResponse::Unauthorized().json(ErrorDTO::new("Jwt is invalid".to_owned())),
-                ));
+            if let Err(error) = result {
+                match error {
+                    UserServiceGetOneError::NotFound => {
+                        return Ok(ServiceResponse::new(
+                            req.request().clone(),
+                            HttpResponse::Unauthorized().json(ErrorDTO::new("Вы не авторизованы")),
+                        ));
+                    }
+                    UserServiceGetOneError::UnexpectedError => {
+                        return Ok(ServiceResponse::new(
+                            req.request().clone(),
+                            HttpResponse::InternalServerError()
+                                .json(ErrorDTO::new("Внезапная ошибка")),
+                        ));
+                    }
+                }
             }
 
             let res = service.call(req).await?;

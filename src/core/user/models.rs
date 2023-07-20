@@ -45,21 +45,3 @@ impl Users {
         self.0
     }
 }
-
-#[derive(Debug)]
-pub enum UserRepositoryError {
-    Message(String),
-}
-
-#[derive(Debug)]
-pub enum UserServiceError {
-    Message(String),
-}
-
-impl Into<UserServiceError> for UserRepositoryError {
-    fn into(self) -> UserServiceError {
-        match self {
-            UserRepositoryError::Message(message) => UserServiceError::Message(message),
-        }
-    }
-}

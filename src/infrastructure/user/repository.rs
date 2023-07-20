@@ -2,8 +2,11 @@ use async_trait::async_trait;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use crate::core::user::{
-    models::{User, UserRepositoryError},
-    repository::UserRepository,
+    models::User,
+    repository::{
+        UserRepository, UserRepositoryInsertError, UserRepositorySelectAllError,
+        UserRepositorySelectOneError,
+    },
 };
 
 pub struct MemoryUserRepository {
@@ -36,35 +39,34 @@ impl MemoryUserRepository {
 
 #[async_trait]
 impl UserRepository for MemoryUserRepository {
-    async fn select_all(&self) -> Result<Vec<User>, UserRepositoryError> {
+    async fn select_all(&self) -> Result<Vec<User>, UserRepositorySelectAllError> {
         let users = self.lock_users();
 
         Ok((*users).clone())
     }
 
-    async fn select_one_by_id(&self, id: i32) -> Result<User, UserRepositoryError> {
+    async fn select_one_by_id(&self, id: i32) -> Result<User, UserRepositorySelectOneError> {
         let users = self.lock_users();
 
         let user = (*users).iter().find(|user| user.get_id() == id);
 
         match user {
             Some(user) => Ok(user.clone()),
-            None => Err(UserRepositoryError::Message(
-                "Такого пользователя не существует".to_owned(),
-            )),
+            None => Err(UserRepositorySelectOneError::NotFound),
         }
     }
 
-    async fn select_one_by_login(&self, login: String) -> Result<User, UserRepositoryError> {
+    async fn select_one_by_login(
+        &self,
+        login: String,
+    ) -> Result<User, UserRepositorySelectOneError> {
         let users = self.lock_users();
 
         let user = (*users).iter().find(|user| user.clone_login() == login);
 
         match user {
             Some(user) => Ok(user.clone()),
-            None => Err(UserRepositoryError::Message(
-                "Такого пользователя не существует".to_owned(),
-            )),
+            None => Err(UserRepositorySelectOneError::NotFound),
         }
     }
 
@@ -73,7 +75,7 @@ impl UserRepository for MemoryUserRepository {
         login: String,
         hash: String,
         salt: String,
-    ) -> Result<i32, UserRepositoryError> {
+    ) -> Result<i32, UserRepositoryInsertError> {
         let mut users = self.lock_users();
 
         if (*users)
@@ -81,9 +83,7 @@ impl UserRepository for MemoryUserRepository {
             .find(|user| user.clone_login() == login)
             .is_some()
         {
-            return Err(UserRepositoryError::Message(
-                "Такой логин уже используется".to_owned(),
-            ));
+            return Err(UserRepositoryInsertError::LoginAlreadyUsed);
         }
 
         let mut index = self.lock_index();

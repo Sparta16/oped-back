@@ -3,22 +3,22 @@ use serde::{Deserialize, Serialize};
 use crate::core::user::models::{User, Users};
 
 #[derive(Serialize)]
-pub struct GetUsersResDTO {
+pub struct GetUserResDTO {
     id: i32,
     login: String,
 }
 
-impl Into<GetUsersResDTO> for User {
-    fn into(self) -> GetUsersResDTO {
-        GetUsersResDTO {
+impl Into<GetUserResDTO> for User {
+    fn into(self) -> GetUserResDTO {
+        GetUserResDTO {
             id: self.get_id(),
             login: self.clone_login(),
         }
     }
 }
 
-impl Into<Vec<GetUsersResDTO>> for Users {
-    fn into(self) -> Vec<GetUsersResDTO> {
+impl Into<Vec<GetUserResDTO>> for Users {
+    fn into(self) -> Vec<GetUserResDTO> {
         self.into_users()
             .into_iter()
             .map(|item| item.into())
